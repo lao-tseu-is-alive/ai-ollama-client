@@ -1,9 +1,6 @@
 <style scoped>
-.read-the-docs {
-  color: #888;
-}
 .container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   font-family: Arial, sans-serif;
@@ -24,7 +21,7 @@ label {
 
 .select,
 .textarea {
-  width: 100%;
+  width: 95%;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -87,8 +84,8 @@ label {
       <textarea
         id="prompt"
         v-model="prompt"
-        rows="4"
-        cols="50"
+        rows="14"
+        cols="60"
         class="textarea"
         placeholder="Enter your prompt here"
       ></textarea>
