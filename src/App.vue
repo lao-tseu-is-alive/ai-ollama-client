@@ -7,10 +7,10 @@ import HelloOllama from './components/HelloOllama.vue'
 import {APP, getLog, VERSION} from "@/config";
 import {onMounted} from "vue";
 
-const log = getLog(`${APP} v${VERSION}`, 4, 4);
+const log = getLog(`${APP}`, 4, 4);
 
 onMounted(async () => {
-  const mountedMsg = `🏠 mounted ${APP}:App.vue`;
+  const mountedMsg = `🏠 mounted ${APP}:App.vue v${VERSION}`;
   document.title = APP;
   log.t(mountedMsg);
 });

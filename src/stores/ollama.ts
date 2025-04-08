@@ -1,9 +1,14 @@
 import { defineStore } from 'pinia';
-import  ollama from 'ollama/browser'; // Import the Ollama JS library
+import  ollama from 'ollama'; // Import the Ollama JS library
+import type { ModelResponse } from "ollama";
+import {getLog} from "@/config.ts";
+
+const log = getLog(`ollama.ts`, 4, 4);
+
 
 export const useOllamaStore = defineStore('ollama', {
     state: () => ({
-        models: [] as string[],           // List of available models
+        models: [] as ModelResponse[],           // List of available models
         selectedModel: null as string | null, // Currently selected model
         prompt: '',                      // User-entered prompt
         response: null as string | null, // Generated response
@@ -16,7 +21,12 @@ export const useOllamaStore = defineStore('ollama', {
             this.isLoading = true;
             try {
                 const response = await ollama.list(); // Use 'list' from ollama-js
-                this.models = response.models.map((model: any) => model.name);
+                // filter models used for embeddings
+                this.models = response.models
+                    .map((model: any) => model)
+                    .filter((model: any) => (`${model.name}`.indexOf("embed")<0 && !model.details.families.includes('bert')))
+                    .sort((a: any, b: any) => b.name.localeCompare(a.name)).reverse();
+                log.l(`ollama.list() returned ${this.models.length} models:`, this.models)
             } catch (error) {
                 this.error = 'Failed to fetch models';
                 console.error(error);
@@ -32,9 +42,20 @@ export const useOllamaStore = defineStore('ollama', {
             }
             this.isLoading = true;
             try {
+                const modelOptions = await ollama.show({model: this.selectedModel})
+                log.l(`ollama.show(${this.selectedModel}) returned:`,  modelOptions)
+                // https://github.com/ollama/ollama-js?tab=readme-ov-file#generate
+                // https://github.com/ollama/ollama/blob/main/docs/api.md#parameters
                 const response = await ollama.generate({
                     model: this.selectedModel,
                     prompt: this.prompt,
+                    keep_alive: "15m",  // how long the model will stay loaded in memory following the request default 5 minutes
+                    //https://github.com/ollama/ollama/blob/main/docs/api.md#generate-request-with-options
+                    //https://github.com/ollama/ollama/blob/main/docs/modelfile.md
+                    options: {
+                        num_ctx: 4096,
+                        temperature: 0.5
+                    }
                 });
                 this.response = response.response; // Extract the response text
             } catch (error) {

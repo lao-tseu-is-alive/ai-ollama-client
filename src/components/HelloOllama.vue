@@ -72,8 +72,8 @@ label {
       <label for="model">Select Model:</label>
       <select id="model" v-model="selectedModel" class="select">
         <option value="" disabled>Select a model</option>
-        <option v-for="model in models" :key="model" :value="model">
-          {{ model }}
+        <option v-for="model in models" :key="model.name" :value="model.name">
+          {{ model.name }} - {{ formatBytes(model.size) }}, {{ model.details.families }}
         </option>
       </select>
     </div>
@@ -113,6 +113,20 @@ const store = useOllamaStore();
 defineProps<{ msg: string }>()
 
 const llmPromptHistory = ref("")
+
+// formatBytes converts a number of bytes into a human-readable format with appropriate units (B, KB, MB, GB, etc.):
+function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 B';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
 
 // Reactive state bound to the store using computed properties
 const models = computed(() => store.models);
