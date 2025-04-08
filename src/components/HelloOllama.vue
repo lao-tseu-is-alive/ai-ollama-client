@@ -85,7 +85,7 @@ label {
       <textarea
         id="prompt"
         v-model="prompt"
-        rows="8"
+        rows="1"
         cols="60"
         class="textarea"
         placeholder="Enter your prompt here"
@@ -100,11 +100,12 @@ label {
     <!-- Response Display -->
     <div v-if="response" class="response">
       <h2>Response:</h2>
-      <MdPreview v-model="response"
+      <MdEditor v-model="response"
                 language="en-US"
                 theme="light"
                 previewTheme="github"
                 codeTheme="github"
+                previewOnly="true"
       />
     </div>
   </div>
@@ -113,7 +114,7 @@ label {
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useOllamaStore } from '../stores/ollama';
-import { MdPreview } from 'md-editor-v3';
+import { MdEditor } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
 // Access the Pinia store
 const store = useOllamaStore();

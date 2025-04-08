@@ -10,7 +10,7 @@ export const useOllamaStore = defineStore('ollama', {
     state: () => ({
         models: [] as ModelResponse[],           // List of available models
         selectedModel: null as string | null, // Currently selected model
-        prompt: 'write a typescript geometry class and output nice formated markdown',                      // User-entered prompt
+        prompt: 'Write a typescript code for Point geometry class. output in markdown for github, with code sections in typescript.',                      // User-entered prompt
         response: null as string | null, // Generated response
         isLoading: false,                // Loading state
         error: null as string | null,    // Error messages
