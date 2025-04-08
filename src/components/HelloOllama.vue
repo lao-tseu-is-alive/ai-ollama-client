@@ -59,6 +59,7 @@ label {
   padding: 10px;
   background-color: #f9f9f9;
   border-radius: 4px;
+  text-align: unset;
 }
 </style>
 <template>
@@ -84,7 +85,7 @@ label {
       <textarea
         id="prompt"
         v-model="prompt"
-        rows="14"
+        rows="8"
         cols="60"
         class="textarea"
         placeholder="Enter your prompt here"
@@ -99,7 +100,12 @@ label {
     <!-- Response Display -->
     <div v-if="response" class="response">
       <h2>Response:</h2>
-      <p>{{ response }}</p>
+      <MdPreview v-model="response"
+                language="en-US"
+                theme="light"
+                previewTheme="github"
+                codeTheme="github"
+      />
     </div>
   </div>
 </template>
@@ -107,7 +113,8 @@ label {
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useOllamaStore } from '../stores/ollama';
-
+import { MdPreview } from 'md-editor-v3';
+import 'md-editor-v3/lib/style.css';
 // Access the Pinia store
 const store = useOllamaStore();
 defineProps<{ msg: string }>()

@@ -27,7 +27,6 @@ body {
   min-height: 100vh;
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
 }
 
 @media (prefers-color-scheme: light) {
