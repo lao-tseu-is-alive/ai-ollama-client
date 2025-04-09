@@ -60,10 +60,11 @@ export const useOllamaStore = defineStore('ollama', {
                         temperature: 0.5
                     }
                 });
-                this.response = ""
+                this.response = "" // reset the previous answer if any and take care of original null value
+                // Extract the response text
                 for await (const part of response) {
                     this.response = this.response + part.response;
-                } // Extract the response text
+                }
             } catch (error) {
                 this.error = `Failed to generate response error: ${error}`;
                 console.error(error);

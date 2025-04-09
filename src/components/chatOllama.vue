@@ -88,7 +88,7 @@ label {
 </style>
 <template>
   <div class="container">
-    <div v-if="isLoading" class="loading">Loading...</div>
+    <div v-if="isLoading" class="loading">Streaming response...</div>
     <div v-if="error" class="error">{{ error }}</div>
     <!-- Model Selection -->
     <div class="form-group">
@@ -116,7 +116,7 @@ label {
 
     <!-- Generate Button -->
     <button @click="generate" :disabled="isLoading" class="button">
-      Generate
+      {{ isLoading ? 'Streaming...' : 'Generate' }}
     </button>
 
     <!-- Response Display -->
