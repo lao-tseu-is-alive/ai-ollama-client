@@ -10,7 +10,7 @@ export const useOllamaStore = defineStore('ollama', {
     state: () => ({
         models: [] as ModelResponse[],           // List of available models
         selectedModel: null as string | null, // Currently selected model
-        prompt: 'Write a typescript code for Point geometry class. output in markdown for github, with code sections in typescript.',                      // User-entered prompt
+        prompt: null as string | null,                      // User-entered prompt
         response: null as string | null, // Generated response
         isLoading: false,                // Loading state
         error: null as string | null,    // Error messages
@@ -19,6 +19,7 @@ export const useOllamaStore = defineStore('ollama', {
         // Fetch available models from Ollama
         async fetchModels() {
             this.isLoading = true;
+            this.error = null;
             try {
                 const response = await ollama.list(); // Use 'list' from ollama-js
                 // filter models used for embeddings
@@ -41,6 +42,7 @@ export const useOllamaStore = defineStore('ollama', {
                 return;
             }
             this.isLoading = true;
+            this.error = null;
             try {
                 const modelOptions = await ollama.show({model: this.selectedModel})
                 log.l(`ollama.show(${this.selectedModel}) returned:`,  modelOptions)
@@ -59,7 +61,7 @@ export const useOllamaStore = defineStore('ollama', {
                 });
                 this.response = response.response; // Extract the response text
             } catch (error) {
-                this.error = 'Failed to generate response';
+                this.error = `Failed to generate response error: ${error}`;
                 console.error(error);
             } finally {
                 this.isLoading = false;

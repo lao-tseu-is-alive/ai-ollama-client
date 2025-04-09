@@ -13,6 +13,10 @@
   margin-bottom: 20px;
 }
 
+.container h2{
+  font-size: 1.2rem;
+}
+
 label {
   display: block;
   margin-bottom: 5px;
@@ -64,10 +68,8 @@ label {
 </style>
 <template>
 <div class="container">
-  <h2>{{ msg }}</h2>
   <div v-if="isLoading" class="loading">Loading...</div>
     <div v-if="error" class="error">{{ error }}</div>
-
     <!-- Model Selection -->
     <div class="form-group">
       <label for="model">Select Model:</label>
@@ -85,7 +87,7 @@ label {
       <textarea
         id="prompt"
         v-model="prompt"
-        rows="1"
+        rows="2"
         cols="60"
         class="textarea"
         placeholder="Enter your prompt here"
@@ -98,29 +100,34 @@ label {
     </button>
 
     <!-- Response Display -->
-    <div v-if="response" class="response">
+    <div  class="response">
       <h2>Response:</h2>
-      <MdEditor v-model="response"
-                language="en-US"
-                theme="light"
-                previewTheme="github"
-                codeTheme="github"
-                previewOnly="true"
+      <md-viewer :source="response"
+                :options="customOptions"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useOllamaStore } from '../stores/ollama';
-import { MdEditor } from 'md-editor-v3';
-import 'md-editor-v3/lib/style.css';
+import MdViewer from "@/components/mdViewer.vue";
 // Access the Pinia store
 const store = useOllamaStore();
-defineProps<{ msg: string }>()
 
+import {getLog} from "@/config.ts";
+
+const log = getLog(`chatOllama.vue`, 4, 4);
+
+const props = defineProps<{ userPrompt: string }>()
+// Optional custom markdown-it options
+const customOptions = {
+  breaks: true, // Convert newlines to <br>
+  xhtmlOut: false, // Use XHTML-compliant output
+};
 const llmPromptHistory = ref("")
+
 
 // formatBytes converts a number of bytes into a human-readable format with appropriate units (B, KB, MB, GB, etc.):
 function formatBytes(bytes: number, decimals: number = 2): string {
@@ -135,6 +142,13 @@ function formatBytes(bytes: number, decimals: number = 2): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
+// vue watch for userPrompt changes
+watch(
+    () => props.userPrompt,
+    (newPrompt) => {
+        prompt.value = newPrompt;
+    }
+)
 
 // Reactive state bound to the store using computed properties
 const models = computed(() => store.models);
@@ -146,7 +160,7 @@ const prompt = computed({
   get: () => store.prompt,
   set: (value) => (store.prompt = value),
 });
-const response = computed(() => store.response);
+const response = computed(() => store.response || "...");
 const isLoading = computed(() => store.isLoading);
 const error = computed(() => store.error);
 
@@ -154,12 +168,15 @@ const error = computed(() => store.error);
 const generate = () => {
   store.generateResponse();
   llmPromptHistory.value = prompt.value;
-  console.log(llmPromptHistory.value);
+  log.l(llmPromptHistory.value);
 };
 
 // Fetch models when the component mounts
 onMounted(() => {
+  log.t("mounted")
   store.fetchModels();
+  prompt.value = props.userPrompt
+
 });
 
 </script>
