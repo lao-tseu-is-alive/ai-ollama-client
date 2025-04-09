@@ -51,6 +51,7 @@ export const useOllamaStore = defineStore('ollama', {
                 const response = await ollama.generate({
                     model: this.selectedModel,
                     prompt: this.prompt,
+                    stream: true,
                     keep_alive: "15m",  // how long the model will stay loaded in memory following the request default 5 minutes
                     //https://github.com/ollama/ollama/blob/main/docs/api.md#generate-request-with-options
                     //https://github.com/ollama/ollama/blob/main/docs/modelfile.md
@@ -59,7 +60,10 @@ export const useOllamaStore = defineStore('ollama', {
                         temperature: 0.5
                     }
                 });
-                this.response = response.response; // Extract the response text
+                this.response = ""
+                for await (const part of response) {
+                    this.response = this.response + part.response;
+                } // Extract the response text
             } catch (error) {
                 this.error = `Failed to generate response error: ${error}`;
                 console.error(error);
