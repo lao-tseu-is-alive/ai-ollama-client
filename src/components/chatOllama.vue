@@ -147,8 +147,8 @@
         <h4>Raw</h4>
         <pre class="raw-pre">{{ response }}</pre>
       </div>
-
-      <fieldset role="group">
+      <form>
+        <fieldset role="group">
       <textarea
           v-model="prompt"
           rows="2"
@@ -156,11 +156,20 @@
           placeholder="Enter your prompt here..."
           @keydown.enter.exact.prevent="send"
       ></textarea>
-        <button @click="send" :disabled="isLoading || !prompt.trim()">
-          {{ isLoading ? 'Sending…' : 'Send' }}
-        </button>
-        <button @click="reset" :disabled="isLoading" class="secondary">Reset&nbsp;Chat</button>
-      </fieldset>
+          <button @click="send" :disabled="isLoading || !prompt.trim()">
+            {{ isLoading ? 'Sending…' : 'Send' }}
+          </button>
+          <button @click="reset" :disabled="isLoading" class="secondary">Reset&nbsp;Chat</button>
+        </fieldset>
+        <fieldset class="grid">
+          <input type="file" accept=".txt,.md" @change="onFileChange"
+                 placeholder="Single-document RAG (txt/md only for now)"/>
+          <label>
+            <input type="checkbox" v-model="ragEnabled"/>
+            Enable RAG for queries
+          </label>
+        </fieldset>
+      </form>
     </div>
   </article>
 </template>
@@ -184,6 +193,11 @@ const prompt = computed({
   get: () => store.userPrompt,
   set: (v) => (store.userPrompt = v),
 });
+const ragEnabled = computed({
+  get: () => store.ragEnabled,
+  set: (v) => (store.ragEnabled = v),
+});
+
 const response = computed(() => store.response || ''); // optional raw
 const isLoading = computed(() => store.isLoading);
 const error = computed(() => store.error);
@@ -202,9 +216,23 @@ function formatBytes(bytes: number, decimals: number = 2): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
+const onFileChange = async (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  // For now, handle text/markdown only
+  const text = await file.text();
+  await store.buildRagIndexFromText(text);
+};
+
 const send = async () => {
   if (!prompt.value.trim()) return;
-  await store.sendChat(); // or sendChatWithRag() if you want
+  if (ragEnabled.value) {
+    await store.sendChatWithRag();
+  } else {
+    await store.sendChat();
+  } // or sendChatWithRag() if you want
   // Auto-scroll to bottom after response streams in
   await nextTick();
   scrollToBottom();
