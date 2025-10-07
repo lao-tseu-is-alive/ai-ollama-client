@@ -1,207 +1,248 @@
 <style scoped>
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  color: #1a1a1a;
-  background-color: #f9f9f9;
-  border-radius: 10px;
+.chat-layout {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+  max-height: 100dvh;
+  background: #f7f7f9;
 }
 
-.form-group {
-  margin-bottom: 20px;
+.chat-transcript {
+  overflow-y: auto;
+  padding: 16px;
 }
 
-.container h2 {
-  font-size: 1.2rem;
+.chat-row {
+  display: flex;
+  margin-bottom: 10px;
 }
 
-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+.chat-row.user {
+  justify-content: flex-end;
 }
 
-.select,
-.textarea {
-  width: 95%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
+.chat-row.assistant {
+  justify-content: flex-start;
 }
 
-.button {
-  background-color: #4caf50;
-  color: white;
-  padding: 10px 20px;
+.bubble {
+  max-width: min(760px, 90%);
+  padding: 10px 12px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.bubble.user {
+  background: #e8f0ff;
+  border-color: #d0e1ff;
+}
+
+.bubble.assistant {
+  background: #0fc9e1;
+}
+
+.bubble-user-text {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #e8f0ff;
+}
+
+.status-line {
+  color: #6b7280;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+.error-banner {
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.raw-panel {
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 8px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  border-top: 1px solid #1f2937;
+  max-height: 25dvh;
+  overflow: auto;
+}
+
+.raw-pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+  padding: 12px 16px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.composer-input {
+  width: 100%;
+  resize: none;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.btn {
   border: none;
-  border-radius: 4px;
+  padding: 10px 14px;
+  background: #e5e7eb;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
 }
 
-.button:disabled {
-  background-color: #cccccc;
+.btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
-
-.loading {
-  color: #888;
-  font-style: italic;
-  margin-bottom: 10px;
-}
-
-.error {
-  color: red;
-  margin-bottom: 10px;
-}
-
-.response {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  text-align: unset;
-}
-
-.raw-response {
-  background-color: #1a1a1a;
-  color: #f9f9f9;
-  padding: 10px;
-  max-width: 90dvh;
-  border-radius: 4px;
-  margin-block-start: 1em;
-  margin-block-end: 1em;
-  margin-inline-start: 0;
-  margin-inline-end: 0;
-  unicode-bidi: isolate;
-}
-.raw-response pre {
-  /* Reset <pre> defaults to match <p> */
-  font-family: monospace;
-  white-space: normal; /* Disable whitespace preservation */
-  margin: 1em ; /* Match typical <p> margin */
-  padding: 0; /* Remove any default padding */
-}
 </style>
+
 <template>
-  <div class="container">
-    <div v-if="isLoading" class="loading">Streaming response...</div>
-    <div v-if="error" class="error">{{ error }}</div>
-    <!-- Model Selection -->
-    <div class="form-group">
-      <label for="model">Select Model:</label>
-      <select id="model" v-model="selectedModel" class="select">
-        <option value="" disabled>Select a model</option>
-        <option v-for="model in models" :key="model.name" :value="model.name">
-          {{ model.name }} - {{ formatBytes(model.size) }}, {{ model.details.families }}
+  <article>
+  <details>
+    <summary>Model selection</summary>
+    <fieldset class="grid">
+      <select id="model" v-model="selectedModel" aria-label="Select your favorite model...">
+        <option selected disabled value="">Select your favorite model</option>
+        <option v-for="m in models" :key="m.name" :value="m.name">
+          {{ m.name }} - {{ formatBytes(m.size) }}, {{ m.details.families }}
         </option>
       </select>
+      <button @click="reset" :disabled="isLoading">New Chat</button>
+      <button @click="toggleRaw">{{ showRawResponse ? 'Hide' : 'Show' }} Raw</button>
+    </fieldset>
+  </details>
+  </article>
+  <div class="chat-layout">
+    <!-- Transcript -->
+    <div class="chat-transcript" ref="transcriptRef">
+      <div
+          v-for="(msg, idx) in messages"
+          :key="idx"
+          class="chat-row"
+          :class="msg.role"
+      >
+        <div class="bubble" :class="msg.role">
+          <!-- Render markdown for assistant, plain for user -->
+          <template v-if="msg.role === 'assistant'">
+            <md-viewer :source="msg.content" :options="mdOptions"/>
+          </template>
+          <template v-if="msg.role != 'assistant'">
+            <pre class="bubble-user-text">{{ msg.content }}</pre>
+          </template>
+        </div>
+      </div>
+
+      <div v-if="error" class="error-banner">{{ error }}</div>
+      <div v-if="isLoading" class="status-line">Streaming response…</div>
     </div>
 
-    <!-- Prompt Input -->
-    <div class="form-group">
-      <label for="prompt">Prompt:</label>
+    <!-- Raw (optional) -->
+    <div v-if="showRawResponse" class="raw-panel">
+      <h4>Raw</h4>
+      <pre class="raw-pre">{{ response }}</pre>
+    </div>
+
+    <!-- Composer -->
+    <div class="composer">
       <textarea
-          id="prompt"
           v-model="prompt"
           rows="2"
-          cols="60"
-          class="textarea"
-          placeholder="Enter your prompt here"
+          class="composer-input"
+          placeholder="Type your message..."
+          @keydown.enter.exact.prevent="send"
       ></textarea>
-    </div>
-
-    <div style="display:flex; gap:8px;">
-      <button @click="send" :disabled="isLoading" class="button">
-        {{ isLoading ? 'Streaming...' : 'Send' }}
+      <button @click="send" :disabled="isLoading || !prompt.trim()">
+        {{ isLoading ? 'Sending…' : 'Send' }}
       </button>
-      <button @click="reset" :disabled="isLoading" class="button" style="background:#888;">
-        Reset Chat
-      </button>
-    </div>
-
-    <!-- Response Display -->
-    <div class="response">
-      <h2>Response:</h2>
-      <md-viewer :source="response"
-                 :options="customOptions"
-      />
-    </div>
-    <!-- Raw Response Button -->
-    <div class="raw-response-button"><button @click="showRawResponse = !showRawResponse">Show Raw Response</button></div>
-    <div v-if="showRawResponse" class="raw-response">
-      <h2>Raw Response:</h2>
-      <pre>{{ response }}</pre>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from 'vue';
-import {useOllamaStore} from '../stores/ollama';
-import MdViewer from "@/components/mdViewer.vue";
-import {getLog} from "@/config.ts";
+import {computed, onMounted, watch, ref, nextTick} from 'vue';
+import {useOllamaStore} from '@/stores/ollama';
+import MdViewer from '@/components/mdViewer.vue';
+import {getLog} from '@/config';
 
-const log = getLog(`chatOllama.vue`, 4, 4);
-
-const showRawResponse = ref(false)
-
-const props = defineProps<{ userPrompt: string }>()
-// Optional custom markdown-it options
-const customOptions = {
-  breaks: true, // Convert newlines to <br>
-  xhtmlOut: false, // Use XHTML-compliant output
-};
-
-// formatBytes converts a number of bytes into a human-readable format with appropriate units (B, KB, MB, GB, etc.):
-function formatBytes(bytes: number, decimals: number = 2): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-}
-
-// vue watch for userPrompt changes
-watch(
-    () => props.userPrompt,
-    (newPrompt) => {
-      prompt.value = newPrompt;
-    }
-)
-
-// Access the Pinia store
+const log = getLog('chatOllama.vue', 4, 4);
 const store = useOllamaStore();
-// Reactive state bound to the store using computed properties
+const props = defineProps<{ userPrompt: string, systemPrompt: string }>()
+
 const models = computed(() => store.models);
 const selectedModel = computed({
   get: () => store.selectedModel,
-  set: (value) => (store.selectedModel = value),
+  set: (v) => (store.selectedModel = v),
 });
 const prompt = computed({
-  get: () => store.prompt,
-  set: (value) => (store.prompt = value),
+  get: () => store.userPrompt,
+  set: (v) => (store.userPrompt = v),
 });
-const response = computed(() => store.response || "...");
+const response = computed(() => store.response || ''); // optional raw
 const isLoading = computed(() => store.isLoading);
 const error = computed(() => store.error);
+const messages = computed(() => store.messages);
 
-// Methods to trigger response generation
-const send = () => store.sendChat();
+const mdOptions = {breaks: true, xhtmlOut: false};
+
+const transcriptRef = ref<HTMLElement | null>(null);
+const showRawResponse = ref(false);
+
+function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024, dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+const send = async () => {
+  if (!prompt.value.trim()) return;
+  await store.sendChat(); // or sendChatWithRag() if you want
+  // Auto-scroll to bottom after response streams in
+  await nextTick();
+  scrollToBottom();
+};
+
 const reset = () => store.resetChat();
+const toggleRaw = () => (showRawResponse.value = !showRawResponse.value);
 
+function scrollToBottom() {
+  const el = transcriptRef.value;
+  if (!el) return;
+  el.scrollTop = el.scrollHeight;
+}
 
-// Fetch models when the component mounts
-onMounted(() => {
+onMounted(async () => {
   log.t("mounted")
-  store.fetchModels();
+  await store.fetchModels();
+  await nextTick(scrollToBottom);
   prompt.value = props.userPrompt
-
 });
 
+// keep transcript pinned to bottom as messages update
+watch(messages, () => nextTick(scrollToBottom), {deep: true});
 </script>
+

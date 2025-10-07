@@ -8,18 +8,20 @@ const log = getLog(`ollama.ts`, 4, 4);
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
+const defaultSystemPrompt = 'You are a helpful assistant.';
+const defaultKeepAlive = '1.5h';
+const defaultNumCtx = 4096;
+const defaultTemperature = 0.5;
 export const useOllamaStore = defineStore('ollama', {
     state: () => ({
         models: [] as ModelResponse[],          // List of available models
         selectedModel: null as string | null,   // Currently selected model
-        prompt: '' as string,
+        userPrompt: '' as string,
         response: '' as string,
         isLoading: false,
         error: null as string | null,
         // memory
-        messages: [
-            { role: 'system', content: 'You are a helpful assistant.' } as ChatMessage,
-        ] as ChatMessage[],
+        messages: [] as ChatMessage[],
     }),
     actions: {
         async fetchModels() {
@@ -42,8 +44,29 @@ export const useOllamaStore = defineStore('ollama', {
         },
 
         resetChat(systemPrompt?: string) {
-            this.messages = [{ role: 'system', content: systemPrompt || 'You are a helpful assistant.' }];
+            this.messages = [{ role: 'system', content: systemPrompt || defaultSystemPrompt }];
             this.response = '';
+            ollama.abort();
+        },
+
+        async initChatLlm(modelName:string, systemPrompt?: string) {
+            if (this.models.length < 1) {
+              await this.fetchModels()
+            }
+            this.selectedModel = modelName
+            this.messages = [{role: 'system', content: systemPrompt || defaultSystemPrompt}];
+            this.response = '';
+            const res = await ollama.chat({
+                model: modelName,
+                messages: this.messages,
+                stream: false,
+                keep_alive: defaultKeepAlive,
+                options: {
+                    num_ctx: defaultNumCtx,
+                    temperature: defaultTemperature,
+                },
+            });
+            log.l("initial res", res)
         },
 
         // Send one user turn with memory
@@ -52,7 +75,7 @@ export const useOllamaStore = defineStore('ollama', {
                 this.error = 'Please select a model';
                 return;
             }
-            const text = (userText ?? this.prompt ?? '').trim();
+            const text = (userText ?? this.userPrompt ?? '').trim();
             if (!text) {
                 this.error = 'Please enter a prompt';
                 return;
@@ -69,10 +92,10 @@ export const useOllamaStore = defineStore('ollama', {
                     model: this.selectedModel,
                     messages: this.messages,
                     stream: true,
-                    keep_alive: '15m',
+                    keep_alive: defaultKeepAlive,
                     options: {
-                        num_ctx: 4096,
-                        temperature: 0.5,
+                        num_ctx: defaultNumCtx,
+                        temperature: defaultTemperature,
                     },
                 });
 
