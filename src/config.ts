@@ -3,7 +3,7 @@ import {levelLog, Log} from "./log"
 export const APP = "aiOllamaClient"
 export const APP_TITLE = "Chat Local LLM"
 export const APP_URL = "https://github.com/lao-tseu-is-alive/ai-ollama-client"
-export const VERSION = "0.0.3"
+export const VERSION = "0.0.4"
 export const BUILD_DATE = "2025-10-07"
 // eslint-disable-next-line no-undef
 export const DEV = process.env.NODE_ENV === "development"

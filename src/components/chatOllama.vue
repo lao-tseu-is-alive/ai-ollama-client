@@ -3,13 +3,12 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: 100%;
-  max-height: 100dvh;
-  background: #f7f7f9;
+  max-height: 85dvh;
 }
 
 .chat-transcript {
   overflow-y: auto;
-  padding: 16px;
+  padding: 0.7rem;
 }
 
 .chat-row {
@@ -21,13 +20,17 @@
   justify-content: flex-end;
 }
 
+.chat-row.system {
+  justify-content: flex-start;
+}
+
 .chat-row.assistant {
   justify-content: flex-start;
 }
 
 .bubble {
-  max-width: min(760px, 90%);
-  padding: 10px 12px;
+  max-width: min(1024px, 90%);
+  padding: 0.2rem .5rem;
   border-radius: 12px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -41,13 +44,16 @@
   border-color: #d0e1ff;
 }
 
+.bubble.system {
+  background: #11d9f3;
+  font-family: monospace, Monospaced, "DejaVu Sans Mono";
+}
+
 .bubble.assistant {
-  background: #0fc9e1;
+  background: #11d9f3;
 }
 
 .bubble-user-text {
-  margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   background: #e8f0ff;
 }
 
@@ -81,15 +87,6 @@
   white-space: pre-wrap;
 }
 
-.composer {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: end;
-  padding: 12px 16px;
-  background: #fff;
-  border-top: 1px solid #e5e7eb;
-}
 
 .composer-input {
   width: 100%;
@@ -100,85 +97,72 @@
   font-size: 14px;
 }
 
-.btn {
-  border: none;
-  padding: 10px 14px;
-  background: #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.btn.primary {
-  background: #2563eb;
-  color: #fff;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 </style>
 
 <template>
   <article>
-  <details>
-    <summary>Model selection</summary>
-    <fieldset class="grid">
-      <select id="model" v-model="selectedModel" aria-label="Select your favorite model...">
-        <option selected disabled value="">Select your favorite model</option>
-        <option v-for="m in models" :key="m.name" :value="m.name">
-          {{ m.name }} - {{ formatBytes(m.size) }}, {{ m.details.families }}
-        </option>
-      </select>
-      <button @click="reset" :disabled="isLoading">New Chat</button>
-      <button @click="toggleRaw">{{ showRawResponse ? 'Hide' : 'Show' }} Raw</button>
-    </fieldset>
-  </details>
+    <details>
+      <summary>Model selection</summary>
+      <fieldset class="grid">
+        <select id="model" v-model="selectedModel" aria-label="Select your favorite model...">
+          <option selected disabled value="">Select your favorite model</option>
+          <option v-for="m in models" :key="m.name" :value="m.name">
+            {{ m.name }} - {{ formatBytes(m.size) }}, {{ m.details.families }}
+          </option>
+        </select>
+        <button @click="toggleRaw">{{ showRawResponse ? 'Hide' : 'Show' }} Raw</button>
+      </fieldset>
+    </details>
   </article>
-  <div class="chat-layout">
-    <!-- Transcript -->
-    <div class="chat-transcript" ref="transcriptRef">
-      <div
-          v-for="(msg, idx) in messages"
-          :key="idx"
-          class="chat-row"
-          :class="msg.role"
-      >
-        <div class="bubble" :class="msg.role">
-          <!-- Render markdown for assistant, plain for user -->
-          <template v-if="msg.role === 'assistant'">
-            <md-viewer :source="msg.content" :options="mdOptions"/>
-          </template>
-          <template v-if="msg.role != 'assistant'">
-            <pre class="bubble-user-text">{{ msg.content }}</pre>
-          </template>
+  <article>
+    <div class="chat-layout">
+      <!-- Transcript -->
+      <div class="chat-transcript" ref="transcriptRef">
+        <div
+            v-for="(msg, idx) in messages"
+            :key="idx"
+            class="chat-row"
+            :class="msg.role"
+        >
+          <div class="bubble" :class="msg.role">
+            <template v-if="msg.role === 'system'">
+              <p>{{ msg.content }}</p>
+            </template>
+            <template v-else-if="msg.role === 'assistant'">
+              <!-- Render markdown for assistant -->
+              <md-viewer :source="msg.content" :options="mdOptions"/>
+            </template>
+            <template v-else>
+              <p class="bubble-user-text">{{ msg.content }}</p>
+            </template>
+          </div>
         </div>
+
+        <div v-if="error" class="error-banner">{{ error }}</div>
+        <div v-if="isLoading" class="status-line">Streaming response…</div>
       </div>
 
-      <div v-if="error" class="error-banner">{{ error }}</div>
-      <div v-if="isLoading" class="status-line">Streaming response…</div>
-    </div>
+      <!-- Raw (optional) -->
+      <div v-if="showRawResponse" class="raw-panel">
+        <h4>Raw</h4>
+        <pre class="raw-pre">{{ response }}</pre>
+      </div>
 
-    <!-- Raw (optional) -->
-    <div v-if="showRawResponse" class="raw-panel">
-      <h4>Raw</h4>
-      <pre class="raw-pre">{{ response }}</pre>
-    </div>
-
-    <!-- Composer -->
-    <div class="composer">
+      <fieldset role="group">
       <textarea
           v-model="prompt"
           rows="2"
           class="composer-input"
-          placeholder="Type your message..."
+          placeholder="Enter your prompt here..."
           @keydown.enter.exact.prevent="send"
       ></textarea>
-      <button @click="send" :disabled="isLoading || !prompt.trim()">
-        {{ isLoading ? 'Sending…' : 'Send' }}
-      </button>
+        <button @click="send" :disabled="isLoading || !prompt.trim()">
+          {{ isLoading ? 'Sending…' : 'Send' }}
+        </button>
+        <button @click="reset" :disabled="isLoading" class="secondary">Reset&nbsp;Chat</button>
+      </fieldset>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -189,7 +173,7 @@ import {getLog} from '@/config';
 
 const log = getLog('chatOllama.vue', 4, 4);
 const store = useOllamaStore();
-const props = defineProps<{ userPrompt: string, systemPrompt: string }>()
+const props = defineProps<{ modelName: string, userPrompt: string, systemPrompt: string }>()
 
 const models = computed(() => store.models);
 const selectedModel = computed({
@@ -239,6 +223,7 @@ onMounted(async () => {
   log.t("mounted")
   await store.fetchModels();
   await nextTick(scrollToBottom);
+  await store.initChatLlm(props.modelName, props.systemPrompt)
   prompt.value = props.userPrompt
 });
 

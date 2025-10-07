@@ -66,6 +66,7 @@ export const useOllamaStore = defineStore('ollama', {
                     temperature: defaultTemperature,
                 },
             });
+            this.messages.push(res.message as ChatMessage);
             log.l("initial res", res)
         },
 
