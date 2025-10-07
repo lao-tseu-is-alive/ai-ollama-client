@@ -114,10 +114,14 @@ label {
       ></textarea>
     </div>
 
-    <!-- Generate Button -->
-    <button @click="generate" :disabled="isLoading" class="button">
-      {{ isLoading ? 'Streaming...' : 'Generate' }}
-    </button>
+    <div style="display:flex; gap:8px;">
+      <button @click="send" :disabled="isLoading" class="button">
+        {{ isLoading ? 'Streaming...' : 'Send' }}
+      </button>
+      <button @click="reset" :disabled="isLoading" class="button" style="background:#888;">
+        Reset Chat
+      </button>
+    </div>
 
     <!-- Response Display -->
     <div class="response">
@@ -139,9 +143,6 @@ label {
 import {ref, computed, onMounted, watch} from 'vue';
 import {useOllamaStore} from '../stores/ollama';
 import MdViewer from "@/components/mdViewer.vue";
-// Access the Pinia store
-const store = useOllamaStore();
-
 import {getLog} from "@/config.ts";
 
 const log = getLog(`chatOllama.vue`, 4, 4);
@@ -174,6 +175,8 @@ watch(
     }
 )
 
+// Access the Pinia store
+const store = useOllamaStore();
 // Reactive state bound to the store using computed properties
 const models = computed(() => store.models);
 const selectedModel = computed({
@@ -188,10 +191,10 @@ const response = computed(() => store.response || "...");
 const isLoading = computed(() => store.isLoading);
 const error = computed(() => store.error);
 
-// Method to trigger response generation
-const generate = () => {
-  store.generateResponse();
-};
+// Methods to trigger response generation
+const send = () => store.sendChat();
+const reset = () => store.resetChat();
+
 
 // Fetch models when the component mounts
 onMounted(() => {
