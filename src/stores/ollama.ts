@@ -26,7 +26,8 @@ export const useOllamaStore = defineStore('ollama', {
                 this.models = response.models
                     .map((model: any) => model)
                     .filter((model: any) => (`${model.name}`.indexOf("embed")<0 && !model.details.families.includes('bert')))
-                    .sort((a: any, b: any) => b.name.localeCompare(a.name)).reverse();
+                    //.sort((a: any, b: any) => b.name.localeCompare(a.name)).reverse();
+                    .sort((a: any, b: any) => b.size < a.size ? 1 : -1); // sort by size reverse
                 log.l(`ollama.list() returned ${this.models.length} models:`, this.models)
             } catch (error) {
                 this.error = 'Failed to fetch models';

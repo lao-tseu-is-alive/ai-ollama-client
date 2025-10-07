@@ -48,7 +48,7 @@ const renderedMarkdown = computed(() => {
 
 onMounted(() => {
   log.t("mounted")
-  log.l("hljs.listLanguages():", hljs.listLanguages())
+  //log.l("hljs.listLanguages():", hljs.listLanguages())
 
 });
 </script>

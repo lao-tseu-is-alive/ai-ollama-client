@@ -9,7 +9,7 @@ import {onMounted, ref} from "vue";
 
 const log = getLog(`${APP}`, 4, 4);
 
-const prompt = ref("Write a typescript class for a 2D Point geometry class. Output in markdown for github(GMF), with code sections in typescript.")
+const prompt = ref("Write a mathematically robust typescript class for a 2D Point geometry in cartesian space.")
 
 
 onMounted(async () => {
