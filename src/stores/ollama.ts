@@ -90,6 +90,11 @@ export const useOllamaStore = defineStore('ollama', {
                 },
             });
             this.messages.push(res.message as ChatMessage);
+            /* allow testing vulnerability
+            const xss = "## example xss \n\n  <br> ```typescript\n\n<code>console.log(\"Hello World\");</code><img src='x' onerror='alert(\"🚨 XSS Executed!\")'>```";
+            const badMsg:ChatMessage = {role: 'assistant', content: xss}
+            this.messages.push(badMsg);
+             */
             log.l("initial res", res)
         },
 

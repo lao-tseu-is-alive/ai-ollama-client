@@ -14,7 +14,7 @@ import {getLog} from "@/config.ts";
 
 const mdUtils = new MarkdownIt().utils;
 
-const log = getLog(`mdViewer.vue`, 3, 4);
+const log = getLog(`mdViewer.vue`, 4, 4);
 const props = defineProps<{
   source: string,
   options?: Options,
@@ -23,14 +23,15 @@ const props = defineProps<{
 // Initialize markdown-it with default options if none provided
 const md = computed(() => {
   const defaultOptions: Options = {
-    html: true, // Allow HTML in Markdown
+    html: false, // Allow HTML in Markdown
     linkify: true, // Auto convert URLs to links
     typographer: true, // Enable smart typography
     highlight: function (str, lang) {
-      log.l(`in highlight(${str}, ${lang})`)
+      log.w(`in highlight(${str}, ${lang})`)
       // --- MITIGATION for CVE-2025-7969 ---
       // First, escape the string to prevent XSS.
       const safeStr = mdUtils.escapeHtml(str);
+      log.w(`in highlight safeStr : ${safeStr}, ${lang})`)
     if (lang && hljs.getLanguage(lang)) {
       try {
         log.l("got the language:")
