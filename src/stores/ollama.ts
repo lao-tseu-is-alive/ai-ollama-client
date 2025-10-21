@@ -169,13 +169,20 @@ export const useOllamaStore = defineStore('ollama', {
         async retrieveContext(query: string, k: number): Promise<string[]> {
             if (k <1) k = this.ragTopK;
             if (!this.ragEnabled || this.ragChunks.length === 0) return [];
-            const qEmb = (await this.embedTexts([query]))[0];
-            const scored = this.ragEmbeddings.map((emb, idx) => ({
-                idx,
-                score: cosineSim(qEmb, emb),
-            }));
+            const qEmbRaw = (await this.embedTexts([query]))[0];
+            if (!qEmbRaw) return [];
+            const qEmb: number[] = qEmbRaw;
+            const scored = this.ragEmbeddings
+                .map((emb, idx) => {
+                    if (!emb) return null;
+                    return {
+                        idx,
+                        score: cosineSim(qEmb, emb),
+                    };
+                })
+                .filter((item): item is { idx: number; score: number } => item !== null);
             scored.sort((a, b) => b.score - a.score);
-            const top = scored.slice(0, k).map(s => this.ragChunks[s.idx]);
+            const top = scored.slice(0, k).map(s => this.ragChunks[s.idx]!);
             log.l("topK : ", top)
             return top;
         },
