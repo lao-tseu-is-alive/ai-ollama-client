@@ -12,6 +12,8 @@ import hljs from "highlight.js";
 import {computed, onMounted} from "vue";
 import {getLog} from "@/config.ts";
 
+const mdUtils = new MarkdownIt().utils;
+
 const log = getLog(`mdViewer.vue`, 3, 4);
 const props = defineProps<{
   source: string,
@@ -26,16 +28,19 @@ const md = computed(() => {
     typographer: true, // Enable smart typography
     highlight: function (str, lang) {
       log.l(`in highlight(${str}, ${lang})`)
+      // --- MITIGATION for CVE-2025-7969 ---
+      // First, escape the string to prevent XSS.
+      const safeStr = mdUtils.escapeHtml(str);
     if (lang && hljs.getLanguage(lang)) {
       try {
         log.l("got the language:")
-        return hljs.highlight(str, { language: lang }).value;
+        return hljs.highlight(safeStr, { language: lang }).value;
       } catch (error) {
         log.w(`hljs got error ${error}`, error)
       }
     }
     log.w(`missed the language:${lang}`, hljs.listLanguages())
-    return ''; // use external default escaping
+    return safeStr; // use external default escaping
     }
   };
   return new MarkdownIt({ ...defaultOptions, ...(props.options || {}) });
